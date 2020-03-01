@@ -5,11 +5,17 @@ default: build
 test:
 	go test ./...
 
-build: test
+clean:
+	docker stop httpcron &>/dev/null || true
+
+build: clean test
 	docker build -t httpcron .
 
 run: build
-	docker run --rm -d -p "9000:9000" -it httpcron
+	docker run --rm -d --name httpcron -p "9000:9000" -it httpcron
+
+logs:
+	docker logs -f httpcron
 
 deploy: build
 	ssh -tt blog sudo service httpcron stop

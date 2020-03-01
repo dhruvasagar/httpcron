@@ -10,12 +10,12 @@ import (
 
 func InitAPI(r *mux.Router, sdb *storm.DB, cron *services.Cron) {
 	s := r.PathPrefix(
-		"/api",
+		"/api/",
 	).Headers(
 		"Content-Type", "application/json",
 	).Subrouter()
 
 	s.Use(handlers.AuthorizationHandler)
 
-	api.InitCronsAPI(r, sdb, cron)
+	api.InitCronsAPI(s, sdb, cron)
 }
