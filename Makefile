@@ -12,7 +12,7 @@ build: clean test
 	docker build -t httpcron .
 
 run: build
-	docker run --rm -d --name httpcron -p "9000:9000" -it httpcron
+	docker run --rm -d --name httpcron -p "9000:9000" -v 'dbdata:/dbdata' -it httpcron
 
 logs:
 	docker logs -f httpcron
