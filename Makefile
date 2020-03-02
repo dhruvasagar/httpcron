@@ -1,4 +1,4 @@
-.PHONY: default build run clean deploy
+.PHONY: default test clean build run logs deploy
 
 default: build
 
@@ -12,7 +12,13 @@ build: clean test
 	docker build -t httpcron .
 
 run: build
-	docker run --rm -d --name httpcron -p "9000:9000" -v 'dbdata:/dbdata' -it httpcron
+	docker run \
+		-d \
+		-p "9000:9000" \
+		-v 'dbdata:/dbdata' \
+		--name httpcron \
+		--restart always \
+		-it httpcron
 
 logs:
 	docker logs -f httpcron
