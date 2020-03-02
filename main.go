@@ -51,12 +51,15 @@ func getWaitTimeout() time.Duration {
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatal("Error loading .env file", err)
 	}
 
 	db := db.New()
 
-	cron := services.NewCron()
+	cron, err := services.NewCron(db)
+	if err != nil {
+		log.Fatal("Error starting cron", err)
+	}
 
 	r := mux.NewRouter()
 	loggedRouter := handlers.LoggingHandler(os.Stdout, r)

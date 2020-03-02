@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/asdine/storm"
 	"github.com/dhruvasagar/httpcron/db"
@@ -15,7 +16,7 @@ func renderJSON(w http.ResponseWriter, data interface{}) {
 	json.NewEncoder(w).Encode(data)
 }
 
-func index(sdb *storm.DB) http.HandlerFunc {
+func index(sdb *storm.DB, cron *services.Cron) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var cronEntries []db.CronEntry
 		err := sdb.All(&cronEntries)
@@ -60,10 +61,12 @@ func create(sdb *storm.DB, cron *services.Cron) http.HandlerFunc {
 	}
 }
 
-func get(sdb *storm.DB) http.HandlerFunc {
+func get(sdb *storm.DB, cron *services.Cron) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		id := vars["id"]
+		idStr := vars["id"]
+		id, _ := strconv.Atoi(idStr)
+
 		var cronEntry db.CronEntry
 		err := sdb.One("ID", id, &cronEntry)
 		if err != nil {
@@ -92,7 +95,8 @@ func update(sdb *storm.DB, cron *services.Cron) http.HandlerFunc {
 func del(sdb *storm.DB, cron *services.Cron) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		id := vars["id"]
+		idStr := vars["id"]
+		id, _ := strconv.Atoi(idStr)
 
 		var cronEntry db.CronEntry
 		err := sdb.One("ID", id, &cronEntry)
@@ -100,13 +104,14 @@ func del(sdb *storm.DB, cron *services.Cron) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		cron.Remove(cronEntry.EntryID)
 
-		err = sdb.Delete("ID", id)
+		err = sdb.DeleteStruct(&cronEntry)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+		cron.Remove(cronEntry.EntryID)
 
 		w.WriteHeader(http.StatusOK)
 		renderJSON(w, map[string]bool{"ok": true})
@@ -120,9 +125,9 @@ func InitCronsAPI(r *mux.Router, sdb *storm.DB, cron *services.Cron) {
 		"Content-Type", "application/json",
 	).Subrouter()
 
-	s.HandleFunc("/", index(sdb)).Methods("GET")
+	s.HandleFunc("/", index(sdb, cron)).Methods("GET")
 	s.HandleFunc("/", create(sdb, cron)).Methods("POST")
-	s.HandleFunc("/{id}", get(sdb)).Methods("GET")
+	s.HandleFunc("/{id}", get(sdb, cron)).Methods("GET")
 	s.HandleFunc("/{id}", update(sdb, cron)).Methods("PUT")
 	s.HandleFunc("/{id}", del(sdb, cron)).Methods("DELETE")
 }
